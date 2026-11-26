@@ -1,34 +1,28 @@
 <!doctype html>
-<html lang="en-CA">
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="{{DESCRIPTION}}">
-  <title>{{TITLE}} · CoolCode</title>
-  <link rel="stylesheet" href="./style.css">
-  <script type="module" src="./app.mjs"></script>
-  {{VISIT_COUNTER}}
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<meta name="description" content="An unlisted Europeana review prototype exploring how places appear in museum and archive collections.">
+<title>Town Heritage · A place, seen from elsewhere</title>
+<link rel="stylesheet" href="style.css"><script type="module" src="app.mjs"></script>
 </head>
-<body data-tool-id="{{TOOL_ID}}">
-  <a class="skip" href="#main">Skip to content</a>
-  <header><a href="https://coolcode.ca/">← CoolCode.ca</a><a href="{{SOURCE_URL}}">Source &amp; instructions ↗</a></header>
-  <main id="main">
-    <p class="eyebrow">Browser tool starter</p>
-    <h1>{{TITLE}}</h1>
-    <p class="intro">{{DESCRIPTION}}</p>
-    <section aria-labelledby="example-title">
-      <h2 id="example-title">Clean a list</h2>
-      <p>Trim spaces, skip blank lines and remove exact duplicates. Capitalization stays distinct.</p>
-      <div class="panels">
-        <div><label for="input">Your lines</label><textarea id="input" rows="10" maxlength="100000" spellcheck="false" placeholder="Paste one item per line"></textarea></div>
-        <div><label for="output">Cleaned lines</label><textarea id="output" rows="10" readonly spellcheck="false"></textarea></div>
-      </div>
-      <div class="actions"><button id="sample" type="button">Load example</button><button id="clear" type="button">Clear</button><button id="copy" type="button" hidden>Copy result</button></div>
-      <p id="status" role="status" aria-live="polite">Paste a list to begin.</p>
-      <noscript><p>This tool needs JavaScript to process your text. The source is available above.</p></noscript>
-    </section>
-    <aside aria-label="Privacy"><strong>Stays on your device.</strong> The browser processes your text in this tab. Reloading clears it.</aside>
-  </main>
-  <footer>Part of <a href="https://coolcode.ca/">the CoolCode collection</a>. {{ISSUE_LINK}}</footer>
-</body>
-</html>
+<body>
+<a class="skip" href="#collection">Skip to collection</a>
+<header class="masthead"><a class="wordmark" href="./">TOWN <strong>HERITAGE</strong></a><span class="badge">EUROPEANA REVIEW PROTOTYPE</span><a href="#about">About this collection</a></header>
+<main>
+<section class="hero"><div><p class="eyebrow">A PLACE, SEEN FROM ELSEWHERE</p><h1>Your town.<br>Other people's archives.</h1><p class="intro">Discover photographs, prints and objects connected to familiar places — held in cultural collections across Europe.</p><p class="capture" id="capture">Loading the collection…</p></div><div class="hero-art" id="hero-art"><span>Places travel.<br>Records remain.</span></div></section>
+<nav class="shelves" id="shelves" aria-label="Captured place collections"></nav>
+<section class="workspace" id="collection">
+<div class="collection-heading"><div><p class="eyebrow">EXPLORE THE CAPTURE</p><h2 id="collection-title">All places</h2><p id="coverage" class="muted"></p></div><button id="saved-toggle" type="button" aria-pressed="false">My collection <span id="saved-count">0</span></button></div>
+<div class="metrics" id="metrics" aria-label="Collection summary"></div>
+<form id="filters" class="filters" role="search"><label class="query">Search captured records<input type="search" id="query" placeholder="A harbour, a railway, a person…" autocomplete="off"></label><label>Institution<select id="institution"><option value="">All institutions</option></select></label><label>Image rights<select id="rights"><option value="">All open statements</option></select></label><label>Sort<select id="sort"><option value="relevance">Collection order</option><option value="oldest">Oldest dated first</option><option value="newest">Newest dated first</option><option value="title">Title A–Z</option></select></label><button id="reset" type="button">Reset filters</button></form>
+<div class="timeline-wrap"><span class="eyebrow">DATE EXPLORER</span><div id="timeline" class="timeline" aria-label="Filter by recorded decade"></div><span id="undated" class="muted"></span></div>
+<div class="result-line"><p id="status" role="status" aria-live="polite"></p><div><button id="share" type="button">Copy view link</button><button id="export" type="button">Export citations</button></div></div>
+<div id="grid" class="grid"></div><div class="empty" id="empty" hidden><h3 id="empty-title">No matching records</h3><p id="empty-text">Try another collection or clear a filter.</p></div><button id="more" type="button" hidden>Show more records</button>
+</section>
+<section class="about" id="about"><div><p class="eyebrow">FOLLOW THE EVIDENCE</p><h2>A discovery, not a claim.</h2><p>These records matched place-related keyword queries in Europeana. A match may concern a person, event or a place with the same name. It does not prove that an image depicts the selected town.</p><p>The institution supplies the record. Its country is not necessarily the object's location. Open a record to examine its description, dates, recorded places and original source.</p></div><div><h3>Small, deliberate collections</h3><p>This prototype displays a dated, manually captured sample. Search and filters work within that sample; they do not query all of Europeana. Empty collections and missing dates remain visible.</p><p>Only records carrying a recognized Public Domain Mark, CC0, CC BY or CC BY-SA statement are included. Attribution and other licence conditions still apply. Metadata and media rights are different. Individual media files can carry different rights; verify the specific image at its original source before reuse.</p><h3>Your collection stays with you</h3><p>Saved items stay in this browser, including their source and capture date. Export citations before clearing browser storage. Images load from their published hosts; opening a source visits that institution. No analytics are included.</p><p><a href="https://www.europeana.eu/en" rel="noopener noreferrer" target="_blank">Explore Europeana</a> · <a href="https://github.com/jsdyer/townheritage" rel="noopener noreferrer" target="_blank">Source and method</a></p></div></section>
+</main>
+<footer><span>Town Heritage</span><span>Independent prototype using Europeana data. Not an official Europeana service.</span></footer>
+<dialog id="record-dialog"><button id="close-dialog" class="close" type="button" aria-label="Close record">Close</button><div id="record-content"></div></dialog><p id="toast" class="toast" role="status" hidden></p>
+</body></html>

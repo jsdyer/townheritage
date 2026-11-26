@@ -1,16 +1,14 @@
 {
-  "id": "coolcode-tool-template",
-  "title": "CoolCode Tool Starter",
-  "description": "A browser-only example that trims lines and removes exact duplicates.",
-  "category": "security",
-  "tags": ["text", "lines", "duplicates"],
-  "icon": "scan-search",
-  "url": "/coolcode-tool-template/",
-  "source": "https://github.com/jsdyer/coolcode-tool-template",
-  "hosting": "project",
-  "access": "browser",
-  "data_info": {
-    "mode": "local",
-    "detail": "The browser reads the text you paste and compares its lines."
-  }
+  "id":"townheritage",
+  "title":"Town Heritage",
+  "description":"Explore place-related images in European museums and archives, with source evidence and reusable-image rights.",
+  "category":"places",
+  "tags":["archives","europeana","heritage","museums"],
+  "icon":"archive",
+  "url":"/townheritage/",
+  "source":"https://github.com/jsdyer/townheritage",
+  "hosting":"project",
+  "access":"browser",
+  "visibility":"unlisted-prototype",
+  "data_info":{"mode":"snapshot","detail":"Manual, bounded Europeana Search API samples using a personal key for project review."}
 }

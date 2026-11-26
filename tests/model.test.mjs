@@ -1,21 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanLines } from '../web/model.mjs';
-test('trims, removes blanks and preserves first-seen order', () => {
-  assert.deepEqual(cleanLines('  Halifax\nLangley\nHalifax\n\nVancouver  '), {
-    text: 'Halifax\nLangley\nVancouver', count: 3, removed: 1,
-  });
-});
-test('supports Windows and old Mac line endings', () => {
-  assert.equal(cleanLines('a\r\nb\ra').text, 'a\nb');
-});
-test('empty text and whitespace produce an empty result', () => {
-  assert.deepEqual(cleanLines(' \n\t'), { text: '', count: 0, removed: 0 });
-});
-test('preserves case and Unicode', () => {
-  assert.equal(cleanLines('Québec\nquébec\n東京\nQuébec').text, 'Québec\nquébec\n東京');
-});
-test('treats markup as ordinary text', () => {
-  assert.equal(cleanLines('<script>alert(1)</script>\n<script>alert(1)</script>').text, '<script>alert(1)</script>');
-});
-test('rejects non-text input', () => { assert.throws(() => cleanLines(null), TypeError); });
+import {safeURL,record,parseSaved,filterRecords,counts,citation} from '../web/model.mjs';
+const sample=(id,title,years=[])=>record({id,title,years,institutions:['Museum A'],creators:[],description:['A Halifax harbour photograph'],places:['Halifax'],collections:['halifax'],dateText:[],rights:[{label:'CC0',url:'https://creativecommons.org/publicdomain/zero/1.0/'}],source:'https://example.org/item',europeana:'https://www.europeana.eu/item'+id});
+test('unsafe schemes credentials and API-key links are excluded',()=>{for(const value of ['javascript:alert(1)','http://example.org','https://user:pass@example.org','https://example.org/?WSKEY=secret','https://example.org/?api_key=secret'])assert.equal(safeURL(value),'');assert.equal(safeURL('https://example.org/item'),'https://example.org/item');});
+test('filters combine and date range matches any recorded year',()=>{const data=[sample('/a/1','First',[1910,1920]),sample('/a/2','Second',[1930])];assert.deepEqual(filterRecords(data,{query:'HALIFAX',collection:'halifax',institution:'Museum A',rights:'CC0',decade:'1920'}).map(r=>r.id),['/a/1']);assert.equal(filterRecords(data,{collection:'unknown'}).length,0);});
+test('undated items sort last in both date directions',()=>{const data=[sample('/a/0','Undated'),sample('/a/1','Older',[1900]),sample('/a/2','Newer',[1950])];assert.deepEqual(filterRecords(data,{sort:'newest'}).map(r=>r.title),['Newer','Older','Undated']);assert.deepEqual(filterRecords(data,{sort:'oldest'}).map(r=>r.title),['Older','Newer','Undated']);assert.equal(data[0].title,'Undated');});
+test('counts deduplicate years within decades and institutions',()=>{const r=counts([sample('/a/1','One',[1910,1911]),sample('/a/2','Two')]);assert.deepEqual(r,{records:2,institutions:1,undated:1,decades:[[1910,1]]});});
+test('saved record survives capture changes and malformed storage fails closed',()=>{const r={...sample('/a/1','An old edition',[1900]),capturedAt:'2026-01-01T00:00:00Z'};assert.equal(parseSaved(JSON.stringify([r]))[0].capturedAt,r.capturedAt);assert.deepEqual(parseSaved('bad json'),[]);assert.deepEqual(parseSaved('{}'),[]);assert.equal(parseSaved(JSON.stringify([r,r])).length,1);});
+test('citations preserve rights and recorded capture date',()=>{const r={...sample('/a/1','Test',[1900]),capturedAt:'2026-01-01T00:00:00Z'};const text=citation(r,'2026-02-01');assert.match(text,/CC0/);assert.match(text,/2026-01-01T/);assert.doesNotMatch(text,/2026-02-01/);assert.match(text,/not a verified depicted location/);});

@@ -1,0 +1,9 @@
+{"rows_per_collection":60,"request_interval_seconds":2,"collections":[
+ {"id":"halifax","title":"Halifax, Nova Scotia","query":"Halifax AND (\"Nova Scotia\" OR Canada)","note":"Qualified keyword matches may mention the place rather than depict it."},
+ {"id":"nova-scotia","title":"Nova Scotia","query":"\"Nova Scotia\"","note":"Province-wide keyword matches, not a complete geographic collection."},
+ {"id":"vancouver","title":"Vancouver","query":"Vancouver","note":"May include Vancouver Island, people named Vancouver, and historical associations."},
+ {"id":"langley","title":"Langley, British Columbia","query":"Langley AND (\"British Columbia\" OR Canada)","note":"Qualified to reduce other Langleys. A small or empty collection is an honest result."},
+ {"id":"canada","title":"Canada abroad","query":"Canada","note":"A broad discovery shelf, not a complete Canadian collection."},
+ {"id":"edinburgh","title":"Edinburgh","query":"Edinburgh","note":"A comparison collection showing another city's representation."},
+ {"id":"amsterdam","title":"Amsterdam","query":"Amsterdam","note":"A comparison collection showing another city's representation."}
+]}

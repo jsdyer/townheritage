@@ -1,179 +1,76 @@
-# CoolCode browser tool template
+# Town Heritage
 
-A starting point for independent tools at `coolcode.ca/<repo>/`: a working local-text
-example, responsive UI, Python standard-library build, Node tests, PR checks and Pages
-publication. No npm install is needed.
+An **unlisted Europeana review prototype**: explore how a familiar place appears in cultural collections across Europe. It is prepared to demonstrate real personal-key use before applying for a Europeana project key.
 
-## Using the example
+**Do not add this prototype to the CoolCode homepage, catalogue, public sitemap, analytics registration or routine watchdog refresh list.** It is not a production service. The HTML declares `noindex,nofollow,noarchive`; this discourages indexing but is not access control. Anyone with its review link can view its published data.
 
-<!-- coolcode:guide -->
-The first occurrence of each trimmed line keeps its place. Compare the output with the original text before copying the result.
-<!-- /coolcode:guide -->
+## What it does
 
-For a real tool, replace this paragraph with one or two plain-text sentences
-about an example, a limit or how to interpret the results. Keep the source,
-coverage, refresh behaviour and a worked example in this README as appropriate.
-When updating a tool, revise any details its behaviour has changed and keep the
-homepage's shorter data-source sentence in `tool.json` accurate.
-The hub imports the marked note into the catalogue README.
+- Seven configurable place searches: Halifax, Nova Scotia, Vancouver, Langley BC, Canada, Edinburgh and Amsterdam.
+- Real images and source metadata from the Europeana Search API, filtered to openly reusable IMAGE records with previews.
+- Search within the capture; filter by institution, rights and recorded decade; sort by title or date.
+- Open each item to inspect its source, creator, dates, recorded place fields, licence and exact collection query.
+- Save a personal collection locally, share a filtered view, and export source citations. Saved records retain the capture date and metadata even if a later capture no longer includes them.
+- Explicit sample coverage, empty-result handling, and missing/ambiguous geographic information. Institution/provider country is never presented as an object's location.
 
-## One-time template setup
+## Enable and run the review build
 
-Enable **Settings → General → Template repository** here. This repository does not
-need Pages enabled: its workflow builds/tests but intentionally skips deployment.
-New copies also skip deployment until `scripts/init.py` sets the tool ID to match
-their repository name. This lets you create the repo before configuring Pages.
+1. Create `jsdyer/townheritage` from `jsdyer/coolcode-tool-template` and publish this source to its `main` branch.
+2. Set **Settings → Pages → Source: GitHub Actions**.
+3. Add **Settings → Secrets and variables → Actions → New repository secret**:
+   - Name: `EUROPEANA_API_KEY`
+   - Value: your Europeana personal API key.
+4. Open **Actions → Town Heritage · Check and review → Run workflow**, select `main`, and run. Optionally enter one extra keyword query.
+5. The first push already attempts a real capture when no saved snapshot exists; manual runs refresh it. The workflow tests, builds and publishes the review site. Use the Pages URL shown by the successful deployment when contacting Europeana.
 
-## Start a new tool
+The key stays in the workflow environment and is sent only to `api.europeana.eu` using the preferred `X-Api-Key` header. It is never embedded in URLs, HTML, JavaScript, downloaded JSON or logs. Sanitized records are committed for reproducibility; raw API responses are never saved (Europeana can echo a key in its response). An explicit output scan rejects the capture if credential material is found. Unexpected redirects are rejected without forwarding credentials.
 
-1. Select **Use this template → Create a new repository**, choose owner `jsdyer`,
-   a unique lowercase name such as `my-tool`, and public visibility.
-2. Clone the new repository. Use Python 3.12+ and Node 24+.
-3. Set the identity, using a slug that matches the repository name:
+The first `main` push collects and publishes if no saved capture exists (seven real calls with the default configuration). That sanitized capture is committed back to `main` using the repository workflow token. Subsequent pushes reuse it and publish source changes without spending API quota. **A manual `workflow_dispatch` on `main` makes a new capture.** Pull requests only check and build; they never receive the key or publish. There is no cron, inactivity guard, automatic daily harvesting or Cloudflare proxy. A failed collection prevents deployment and leaves the last successful site available.
 
-```sh
-python3 scripts/init.py my-tool --title "My Tool" --description "Describe what this tool does."
-```
+## Expand or customize
 
-Review the category, tags and icon in `tool.json`. `access: "browser"` tells the main
-catalogue that the tool works immediately without installation. `--owner` supports a different
-GitHub owner, but only projects owned by `jsdyer` inherit the CoolCode domain.
+Edit `config/collections.json`. Every collection needs a unique lowercase `id`, a display `title`, a Europeana `query`, and an honest coverage `note`. Add any valid keyword query, not just the starter towns. The workflow's optional `extra_query` appends a collection for one capture without changing the source configuration.
 
-4. Replace the example in `web/` and its tests. Update the privacy explanation,
-   source attribution and README to describe the real tool.
-5. Test and preview:
+At most 12 collections and 100 returned rows per collection are supported. Defaults use seven sequential calls, 60 rows each and at least two seconds between calls. These are conservative application limits, **not a claim about Europeana's personal-key quota**. Current Europeana documentation says personal limits have changed and requests must follow fair-use rules; HTTP 429 stops the capture. No automatic retry storm is used.
 
-```sh
+All API calls request `qf=TYPE:IMAGE`, `reusability=open`, `thumbnail=true`, and `profile=rich`. The collector also requires explicit recognized CC0, Public Domain Mark, CC BY or CC BY-SA URIs and excludes records with mixed or unknown rights. Individual media files can carry different rights: verify the specific image at its source before reuse. At least one validated record must be collected overall; individual empty shelves are allowed. Rights filters and counts come from the actual capture. Metadata is not invented to fill empty dates, images, creators or locations. Collection totals are API match counts, not the number of objects represented by the bounded sample. Identical Europeana IDs are deduplicated across collections.
+
+The prototype searches a **sample**, not the entire live Europeana catalogue. To add a new town, collect it through configuration or the manual workflow. A production version can use a cached, rate-limited server endpoint after a project key is granted. There is no browser key-entry field.
+
+## Local development
+
+Python 3.12+ and Node 24+; no production dependencies.
+
+```bash
 node --test tests/*.test.mjs
 python3 -m unittest discover -s tests -v
 python3 scripts/build.py
 python3 -m http.server 8000 --directory dist
 ```
 
-Open `http://localhost:8000/`. The example trims lines, skips blanks and removes exact
-duplicates, preserving first-seen order and capitalization. It processes the text in tab memory. Update that explanation if your app behaves differently.
+Without a real capture, the development build shows an honest “Awaiting its first Europeana capture” state. Test fixtures are not published. To collect locally, place the key in your shell environment privately (do not commit it), then run `python3 scripts/collect.py` and `python3 scripts/build.py --require-data`.
 
-CI also tests the browser flow and mobile layout at a project subpath. Replace the
-sample assertions in `tests/browser_smoke.py` when implementing your own UI. To run
-that check locally (optional for ordinary preview):
+Browser checks use the test-only packages in `tests/browser-requirements.txt`; run `python3 tests/browser_smoke.py` after installing Chromium with Playwright. Tests inject synthetic records only into an isolated temporary copy of the build.
 
-```sh
-python3 -m venv .venv
-. .venv/bin/activate
-python3 -m pip install -r tests/browser-requirements.txt
-python3 -m playwright install --with-deps chromium
-python3 tests/browser_smoke.py
-```
+## Sources, rights and privacy
 
-Playwright is a test-only dependency; the app and its static build do not use it.
+- [Europeana Search API documentation](https://europeana.atlassian.net/wiki/spaces/EF/pages/2385739812)
+- [API access and personal/project keys](https://europeana.atlassian.net/wiki/spaces/EF/pages/2462351393)
+- [Fair-use policy](https://europeana.atlassian.net/wiki/spaces/EF/pages/2704146433)
+- [Europeana terms](https://www.europeana.eu/en/rights/terms-of-use)
 
-## Expand or customize
+Each item links to Europeana, the supplying institution where available, and the image's rights statement. Open reuse can still require attribution or share-alike licensing. CC0 metadata does not make every associated image CC0. An `edmPreview` is a preview; the app does not claim it is a high-resolution original.
 
-Every implemented tool should replace this section with its actual configuration
-path and a working example. A small `config.json` can hold default entities,
-query presets, source choices and request limits. Those defaults should be useful
-starting points, while visitors can enter other valid inputs whenever the source
-supports them. Keep provider limits explicit and separate from the starter list.
+This independent application is not endorsed by Europeana. Europeana and source institutions retain their branding and attribution. Saved collections use the namespaced `coolcode:townheritage:saved:v1` local-storage key. Images load from their published source hosts; the app itself has no analytics or remote user database.
 
-Derive counts, filters and item validation from the current data. Do not require
-exactly the initial number of items. Add a test that expands the configuration,
-and keep historical captures readable when their coverage differs from today's
-watchlist. Display the selected capture date accurately.
+## Project-key application notes
 
-Document which changes need only a normal code push and which also need a data
-refresh. Include the refresh command or exact GitHub workflow and input, followed
-by the publication step. A successful code build need not mean a new collection
-has been fetched. The starter itself has no external collection or refresh.
+Use the completed Pages review link and describe the following only after the workflow has succeeded:
 
-## Publish and register
+> Town Heritage is a non-commercial cultural discovery prototype that helps visitors explore place-related photographs, prints and objects in European heritage collections. We have tested the Search API with a personal key through a small, manual collection workflow. The prototype demonstrates source attribution, explicit item-level rights, transparent sample coverage, local saved collections and source citations. We plan to add cached visitor searches after project-key approval. The personal key is held server-side in GitHub Actions, never delivered to visitors. The prototype is unlisted and marked noindex during review.
 
-When the actual tool is ready, in the **new tool repository** set **Settings → Pages → Build and deployment →
-Source → GitHub Actions**. Push to `main`, or manually run **Browser tool · Check and
-publish** after enabling Pages. If the initial deployment ran before Pages was enabled,
-enable it and rerun. PRs only check/build and provide a downloadable preview artifact.
+The capture's timestamp, request count, collection queries and source counts appear in the downloadable site data at `data/europeana.json`; they provide reproducible evidence of the tested implementation without revealing the key.
 
-Keep `{{VISIT_COUNTER}}` in the page head and `{{ISSUE_LINK}}` in the footer when replacing the starter UI. The build enables these for initialized CoolCode repositories. The shared counter records aggregate opens on coolcode.ca by public tool ID. Toolbox inputs and URL parameters are excluded. The issue link opens a reporting form with the tool already selected.
+## Release boundary
 
-Keep app-owned asset paths and module imports relative. Check `https://coolcode.ca/my-tool/`.
-Do not add a CNAME or set `coolcode.ca` as this project's custom domain; the account
-site supplies it. Only successful `main` builds deploy.
-
-After verifying the app, copy the reviewed object from `tool.json` into `data/tools.json`
-in [the main site](https://github.com/jsdyer/jsdyer.github.io). Each tool still builds
-independently. The hub generates the visitor Worker ID list, watchdog targets and sitemap; deploy and verify the affected services before considering the release complete. Update the hub record when listing metadata changes; the hub is the
-authority for discovery. Every change must follow the [mandatory lifecycle](https://github.com/jsdyer/jsdyer.github.io/blob/main/docs/tool-lifecycle.md). App-only changes may leave integrations unchanged, but this must be checked; documentation, source fields, schedules and registration changes also require the hub update.
-
-The main site separates **Use in your browser** from **Install yourself**. An app
-that asks for a file is still a browser tool. Standalone Linux packages should start
-in their own repositories with their own build/release workflow, rather than copying
-this browser-only scaffold. Their hub record uses `access: "install"`, links to an
-installation guide, and includes `requirements`.
-
-## Files
-
-| Path | Purpose |
-| --- | --- |
-| `tool.json` | Page metadata and a ready-to-copy catalogue record |
-| `web/` | HTML, responsive CSS, DOM interactions and separate model logic |
-| `scripts/build.py` | Escape metadata and build `web/` into `dist/` |
-| `scripts/init.py` | Set a new project's identity |
-| `scripts/add_schedule_guard.py` | Add an opt-in guard for explicitly selected scheduled collectors |
-| `tests/` | Application and builder tests |
-| `.github/workflows/pages.yml` | Check PRs and publish successful main builds |
-| `AGENTS.md` | Instructions for future coding work |
-
-Namespace optional storage as `coolcode:<tool-id>:<key>`; CoolCode paths share a
-browser origin. Don't save pasted text/uploads by default. Document external APIs
-and send only the information needed for the selected action. Never embed secrets.
-
-Scheduled refresh is opt-in. Validate source data before deploying, display its date,
-and preserve the last good deployment on failure. Public-repository schedules can
-stop after 60 days without repository activity.
-
-When adding a collector with `on.schedule`, also keep `workflow_dispatch` available
-for the independent Linux server scheduler. Generate a separate schedule guard,
-listing every scheduled collector in the repository:
-
-```sh
-python3 scripts/add_schedule_guard.py --repository jsdyer/my-tool .github/workflows/pages.yml
-```
-
-Replace the repository and workflow paths with the real values. Review the generated
-allowlist, commit `.github/workflows/schedule-guard.yml`, and verify its first push
-run. Re-run the command with the complete list when adding, renaming or removing a
-collector. The guard runs weekly, independently of collector failures, and calls
-GitHub's enable-workflow API for those paths and itself. It restores workflows
-disabled for inactivity and preserves manually disabled workflows. It does not
-fetch data, create dummy commits or change source/check timestamps.
-
-This is an interim mitigation: GitHub does not document active-workflow renewal as
-a permanent exemption, and scheduled runs can be delayed or dropped. Register the
-collector and its freshness expectations in the independent server scheduler too.
-Document its real data check, collection and publication steps in the tool README.
-The starter has no scheduled collector and therefore ships no recurring guard job.
-
-Templates don't propagate future edits automatically. Adopt fixes explicitly and
-consider a versioned reusable workflow once several tools confirm the shared process.
-Choose and add the intended software license before distributing a new project.
-
-## Search metadata
-
-Initialize the page title with a concise task phrase, while keeping the creative
-app name in `--title`:
-
-```sh
-python3 scripts/init.py line-cleaner --title "Line Cleaner" --description "Trim lines and remove exact duplicates in your browser." --search-title "Trim Lines & Remove Duplicates"
-```
-
-The build adds static `WebApplication` JSON-LD, a free CAD offer and social metadata.
-For initialized jsdyer tools it also adds the canonical CoolCode URL. Forks and the
-uninitialized template do not claim a CoolCode canonical. Review the application
-category in `scripts/build.py` when adapting the tool; the starter is a utility.
-Do not invent ratings or reviews. Search markup does not guarantee a rich result.
-
-For a saved public dataset, pass Dataset objects to `add_search_metadata` from the
-app builder, with actual source attribution, licence, coverage and download URLs.
-Derive counts and dates from the same snapshot used by the app and show those details
-on the page. Keep source edition, retrieval and page-build time distinct. Omit an
-unknown source modification date instead of setting it to the current build time.
-Read the hub's `docs/search-discovery.md` for the release checklist.
+This repository is intentionally separate from production CoolCode integration. Before a production launch: obtain the project key, review current usage limits, add the agreed caching/rate limits, perform the normal repository/catalogue/Worker/watchdog/sitemap lifecycle, and then remove the prototype noindex restriction. No production registration should occur merely because a review Pages deployment succeeds.

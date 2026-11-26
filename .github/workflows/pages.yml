@@ -1,78 +1,99 @@
-name: Browser tool · Check and publish
+name: Town Heritage · Check and review
 on:
   pull_request:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      extra_query:
+        description: Optional additional Europeana keyword query (up to 500 characters)
+        required: false
+        type: string
+        default: ''
 permissions:
   contents: read
+concurrency:
+  group: townheritage-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      publish: ${{ steps.identity.outputs.publish }}
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
         with:
-          persist-credentials: false
+          persist-credentials: true
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Test the application
+      - name: Test application logic
         run: node --test tests/*.test.mjs
-      - name: Test the builder
+      - name: Test collector and publication safeguards
         run: python3 -m unittest discover -s tests -v
-      - name: Build the static application
-        run: python3 scripts/build.py
-      - name: Check whether the tool has been initialized
-        id: identity
+      - name: Decide whether a capture is needed
+        id: capture
         env:
-          REPOSITORY_NAME: ${{ github.event.repository.name }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          python3 - <<'PY'
-          import json, os
-          tool_id = json.load(open('tool.json'))['id']
-          ready = tool_id != 'coolcode-tool-template' and tool_id == os.environ['REPOSITORY_NAME']
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f'publish={str(ready).lower()}\n')
-          PY
+          python3 - <<'PYCODE'
+          import os
+          from pathlib import Path
+          needed = os.environ['EVENT_NAME'] == 'workflow_dispatch' or not Path('data/europeana.json').exists()
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'needed={str(needed).lower()}\n')
+          PYCODE
+      - name: Capture real Europeana results
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.capture.outputs.needed == 'true'
+        env:
+          EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
+          EXTRA_QUERY: ${{ inputs.extra_query }}
+        run: python3 scripts/collect.py --query "$EXTRA_QUERY"
+      - name: Preserve sanitized capture
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.capture.outputs.needed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/europeana.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Record manual Europeana review capture"
+            git push origin HEAD:main
+          fi
+      - name: Build review site
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            python3 scripts/build.py --require-data
+          else
+            python3 scripts/build.py
+          fi
       - name: Install browser test dependencies
         run: |
           python3 -m pip install -r tests/browser-requirements.txt
           python3 -m playwright install --with-deps chromium
-      - name: Check application in a browser
+      - name: Exercise gallery in Chromium
         run: python3 tests/browser_smoke.py
-      - name: Save browser screenshots
-        if: always()
+      - name: Save review artifact
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
-          name: browser-checks
-          path: browser-checks/
-          retention-days: 7
-      - name: Save reviewable site
-        uses: actions/upload-artifact@v7
-        with:
-          name: browser-tool-preview
+          name: townheritage-review
           path: dist/
           include-hidden-files: true
-          retention-days: 7
-      - name: Package Pages site
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.identity.outputs.publish == 'true'
+          retention-days: 30
+      - name: Package Pages review site
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
   deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.build.outputs.publish == 'true'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    concurrency:
-      group: github-pages
-      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write
