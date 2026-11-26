@@ -2,7 +2,7 @@
 
 An **unlisted Europeana review prototype**: explore how a familiar place appears in cultural collections across Europe. It is prepared to demonstrate real personal-key use before applying for a Europeana project key.
 
-**Do not add this prototype to the CoolCode homepage, catalogue, public sitemap, analytics registration or routine watchdog refresh list.** It is not a production service. The HTML declares `noindex,nofollow,noarchive`; this discourages indexing but is not access control. Anyone with its review link can view its published data.
+**Do not add this prototype to the CoolCode homepage, catalogue, public sitemap or routine watchdog refresh list.** It is not a production service. The standard CoolCode aggregate page-open counter is enabled, and the ID is registered separately for owner statistics without a public listing. The HTML declares `noindex,nofollow,noarchive`; this discourages indexing but is not access control. Anyone with its review link can view its published data.
 
 ## What it does
 
@@ -61,7 +61,7 @@ Browser checks use the test-only packages in `tests/browser-requirements.txt`; r
 
 Each item links to Europeana, the supplying institution where available, and the image's rights statement. Open reuse can still require attribution or share-alike licensing. CC0 metadata does not make every associated image CC0. An `edmPreview` is a preview; the app does not claim it is a high-resolution original.
 
-This independent application is not endorsed by Europeana. Europeana and source institutions retain their branding and attribution. Saved collections use the namespaced `coolcode:townheritage:saved:v1` local-storage key. Images load from their published source hosts; the app itself has no analytics or remote user database.
+This independent application is not endorsed by Europeana. Europeana and source institutions retain their branding and attribution. Saved collections use the namespaced `coolcode:townheritage:saved:v1` local-storage key. Images load from their published source hosts; the shared CoolCode counter records aggregate page opens using only this tool ID. Search text, URL query strings and saved collections are not sent. It respects Do Not Track and Global Privacy Control; there is no remote collection database.
 
 ## Project-key application notes
 
@@ -73,4 +73,8 @@ The capture's timestamp, request count, collection queries and source counts app
 
 ## Release boundary
 
-This repository is intentionally separate from production CoolCode integration. Before a production launch: obtain the project key, review current usage limits, add the agreed caching/rate limits, perform the normal repository/catalogue/Worker/watchdog/sitemap lifecycle, and then remove the prototype noindex restriction. No production registration should occur merely because a review Pages deployment succeeds.
+This repository is intentionally separate from production CoolCode integration. Before a production launch: obtain the project key, review current usage limits, add the agreed caching/rate limits, perform the normal repository/catalogue/Worker/watchdog/sitemap lifecycle (retaining existing visit history), and then remove the prototype noindex restriction. No production registration should occur merely because a review Pages deployment succeeds.
+
+## Credential regression checks
+
+Tests simulate Europeana echoing a fake key in a successful response and in error JSON. The full collect/build path is checked: the fake key must be absent from every published file and captured log. `X-Api-Key` is the only credential transport; raw responses are never retained.

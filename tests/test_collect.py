@@ -1,4 +1,6 @@
 import copy
+import contextlib
+import io
 import importlib.util
 import json
 from pathlib import Path
@@ -74,6 +76,36 @@ class CollectorTests(unittest.TestCase):
             with self.assertRaises(ValueError) as caught: c.fetch('town',5,'SECRET')
             self.assertIn('429',str(caught.exception))
             self.assertNotIn('SECRET',str(caught.exception))
+
+    def test_echoed_key_never_reaches_published_files_or_logs(self):
+        key = 'FAKE_EUROPEANA_CANARY_824692'
+        payload = {'success': True, 'apikey': key, 'params': {'wskey': key},
+                   'items': [item(apikey=key)], 'totalResults': 1}
+        logs = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(logs), contextlib.redirect_stderr(logs):
+            root = Path(tmp)
+            (root / 'web').mkdir()
+            (root / 'web/index.html').write_text('<meta name="robots" content="noindex">')
+            (root / 'data').mkdir()
+            with patch.object(c, 'build_opener') as opener:
+                opener.return_value.open.return_value.__enter__.return_value.read.return_value = json.dumps(payload).encode()
+                capture = c.collect(config(), key, c.fetch, lambda delay: None)
+            (root / 'data/europeana.json').write_text(json.dumps(capture))
+            b.build(root, True)
+            for path in (root / 'dist').rglob('*'):
+                if path.is_file():
+                    self.assertNotIn(key.encode(), path.read_bytes(), str(path.relative_to(root)))
+            self.assertNotIn(key, logs.getvalue())
+
+    def test_unsuccessful_json_echo_is_not_logged(self):
+        key = 'FAKE_EUROPEANA_ERROR_CANARY_59637'
+        for payload in ({'success': False, 'apikey': key, 'error': key},
+                        {'success': True, 'items': key, 'apikey': key}):
+            with patch.object(c, 'build_opener') as opener:
+                opener.return_value.open.return_value.__enter__.return_value.read.return_value = json.dumps(payload).encode()
+                with self.assertRaises(ValueError) as caught:
+                    c.fetch('town', 5, key)
+                self.assertNotIn(key, str(caught.exception))
 
     def test_key_in_header_not_query(self):
         with patch.object(c,'build_opener') as opener:
